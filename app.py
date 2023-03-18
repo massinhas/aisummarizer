@@ -11,7 +11,7 @@ openai.api_key = "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"
 def home():
     return render_template('index.html')
 
-@app.route('/summarize', methods=['POST'])
+@app.route('/summarize', methods=['GET', 'POST'])
 def summarize_text():
     data = request.get_json(force=True)
     text = data.get('text', '')
