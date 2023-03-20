@@ -35,7 +35,7 @@ startRecording.addEventListener('click', async function() {
 });
 
 // Add an event listener to the stop recording button
-stopRecording.addEventListener('click', function() {
+stopRecording.addEventListener('click', async function() {
   // Stop the MediaRecorder
   mediaRecorder.stop();
 
@@ -54,24 +54,28 @@ stopRecording.addEventListener('click', function() {
   const formData = new FormData();
   formData.append('audio_file', blob);
 
-  fetch('/transcribe', {
-    method: 'POST',
-    body: formData
-  })
-  .then(response => response.text())
-  .then(transcription => {
-    // Display the transcribed text in the web page
-    const resultDiv = document.getElementById('result');
-    resultDiv.textContent = transcription;
-  })
-  .catch(error => {
+  try {
+    const response = await fetch('/transcribe', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const transcription = await response.text();
+      // Display the transcribed text in the web page
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = transcription;
+    } else {
+      throw new Error('Failed to transcribe audio');
+    }
+  } catch (error) {
     console.error(error);
     alert('Failed to transcribe audio');
-  });
+  }
 });
 
 // Add an event listener to the play button
-playButton.addEventListener('click', function() {
+playButton.addEventListener('click', async function() {
   // Create an AudioContext if one doesn't already exist, or resume the existing one if it's suspended
   if (!audioContext) {
     audioContext = new AudioContext();
@@ -89,13 +93,20 @@ playButton.addEventListener('click', function() {
   request.responseType = 'arraybuffer';
 
   request.onload = function() {
+    // Decode the audio data and create an AudioBuffer object
     audioContext.decodeAudioData(request.response, function(buffer) {
-      // Set the AudioBuffer as the source of the AudioBufferSourceNode
+      // Create a new AudioBufferSourceNode and set its buffer to the decoded AudioBuffer
+      const source = audioContext.createBufferSource();
       source.buffer = buffer;
+  
+      // Connect the AudioBufferSourceNode to the destination of the AudioContext
+      source.connect(audioContext.destination);
+  
       // Start playing the audio
       source.start(0);
     });
   };
-
+  
+  // Send the HTTP request to load the audio file
   request.send();
-});
+  });
