@@ -1,7 +1,6 @@
 // Get references to the HTML elements
 const startRecording = document.getElementById('startRecording');
 const stopRecording = document.getElementById('stopRecording');
-const playButton = document.getElementById('playButton');
 let mediaRecorder;
 let recordedChunks = [];
 let audioContext;
@@ -35,78 +34,47 @@ startRecording.addEventListener('click', async function() {
 });
 
 // Add an event listener to the stop recording button
-stopRecording.addEventListener('click', async function() {
+stopRecording.addEventListener('click', function() {
   // Stop the MediaRecorder
   mediaRecorder.stop();
 
   // Disable the stop recording button
   stopRecording.disabled = true;
 
-  // Prepare the recorded audio data for playback and transcription
+  // Prepare the recorded audio data for transcription
   const blob = new Blob(recordedChunks, { type: 'audio/wav' });
-  const audioURL = URL.createObjectURL(blob);
-
-  // Set the source of the audio element to the recorded audio data
-  const audioElement = document.getElementById('recordedAudio');
-  audioElement.src = audioURL;
-
-  // Transcribe the recorded audio data using the server-side function
   const formData = new FormData();
   formData.append('audio_file', blob);
 
-  try {
-    const response = await fetch('/transcribe', {
-      method: 'POST',
-      body: formData
-    });
+  fetch('/transcribe', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.text())
+  .then(transcription => {
+    // Display the transcribed text in the web page
+    const resultDiv = document.getElementById('result');
+    resultDiv.textContent = transcription;
 
-    if (response.ok) {
-      const transcription = await response.text();
-      // Display the transcribed text in the web page
-      const resultDiv = document.getElementById('result');
-      resultDiv.textContent = transcription;
-    } else {
-      throw new Error('Failed to transcribe audio');
-    }
-  } catch (error) {
+    // Summarize the transcribed text using the server-side function
+    fetch('/summarize', {
+      method: 'POST',
+      body: JSON.stringify({text: transcription}),
+      headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(summary => {
+      // Display the summarized text in the web page
+      const summaryDiv = document.getElementById('summary');
+      summaryDiv.textContent = summary.summary;
+    })
+    .catch(error => {
+      console.error(error);
+      alert('Failed to summarize text');
+    });
+  })
+  .catch(error => {
     console.error(error);
     alert('Failed to transcribe audio');
-  }
-});
-
-// Add an event listener to the play button
-playButton.addEventListener('click', async function() {
-  // Create an AudioContext if one doesn't already exist, or resume the existing one if it's suspended
-  if (!audioContext) {
-    audioContext = new AudioContext();
-  } else if (audioContext.state === 'suspended') {
-    audioContext.resume();
-  }
-
-  // Create an AudioBufferSourceNode and connect it to the AudioContext
-  const source = audioContext.createBufferSource();
-  source.connect(audioContext.destination);
-
-  // Load the audio file using XMLHttpRequest and decode it into an AudioBuffer
-  const request = new XMLHttpRequest();
-  request.open('GET', audioElement.src, true);
-  request.responseType = 'arraybuffer';
-
-  request.onload = function() {
-    // Decode the audio data and create an AudioBuffer object
-    audioContext.decodeAudioData(request.response, function(buffer) {
-      // Create a new AudioBufferSourceNode and set its buffer to the decoded AudioBuffer
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-  
-      // Connect the AudioBufferSourceNode to the destination of the AudioContext
-      source.connect(audioContext.destination);
-  
-      // Start playing the audio
-      source.start(0);
-    });
-  };
-  
-  // Send the HTTP request to load the audio file
-  request.send();
   });
+});

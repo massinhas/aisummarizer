@@ -4,6 +4,7 @@ import openai
 from waitress import serve
 from google.cloud import speech_v1p1beta1 as speech
 import io
+from transformers import pipeline
 
 app = Flask(__name__)
 
@@ -20,6 +21,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = google_credentials_path
 openai.api_key = "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"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:\\Users\\35193\\Downloads\\innate-client-381223-e8a0c286e3cf.json"
 
+summarizer = pipeline('summarization', model='t5-base', tokenizer='t5-base', framework="tf")
 
 @app.route('/')
 def home():
@@ -47,15 +49,7 @@ def summarize_audio():
 
 def generate_summary(text):
     try:
-        response = openai.Completion.create(
-            engine="text-davinci-002",
-            prompt=f"Please provide a summary of the following text: {text}",
-            max_tokens=100,
-            n=1,
-            stop=None,
-            temperature=0.5,
-        )
-        summary = response.choices[0].text.strip()
+        summary = summarizer(text, max_length=100, min_length=5, do_sample=False)[0]['summary_text']
         return jsonify({'summary': summary})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -74,4 +68,5 @@ def transcribe_audio(audio_file):
     return transcript
 
 if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=8080)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
