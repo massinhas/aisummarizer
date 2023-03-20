@@ -5,16 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Summarizer</title>
     <link rel="stylesheet" href="static/styles.css">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>Text Summarizer</h1>
+    <h1>Text Summarizer</h1>
+    
+    <div class="tabs">
+        <button class="tablink" onclick="openTab(event, 'textSummarizer')">Text Summarizer</button>
+        <button class="tablink" onclick="openTab(event, 'audioSummarizer')">Audio Summarizer</button>
+    </div>
+    
+    <div id="textSummarizer" class="tabcontent">
         <textarea id="inputText" placeholder="Enter your text here..."></textarea>
         <button id="summarizeButton">Summarize</button>
         <p id="summary"></p>
     </div>
-    <script src="static/scripts.js"></script>
+
+    <div id="audioSummarizer" class="tabcontent">
+        <button id="startRecording">Start Recording</button>
+        <button id="stopRecording" disabled>Stop Recording</button>
+        <input type="file" id="audioInput" accept="audio/*">
+        <p id="audioSummary"></p>
+    </div>
+
+    <script src="tabs.js"></script>
+    <script src="scripts.js"></script>
+    <script src="audioHandling.js"></script>
 </body>
 </html>
