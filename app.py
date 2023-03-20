@@ -20,6 +20,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = google_credentials_path
 openai.api_key = "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"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:\\Users\\35193\\Downloads\\innate-client-381223-e8a0c286e3cf.json"
 
+
 @app.route('/')
 def home():
     return render_template('index.html')
